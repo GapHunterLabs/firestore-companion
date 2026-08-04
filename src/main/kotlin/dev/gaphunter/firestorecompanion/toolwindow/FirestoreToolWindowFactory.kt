@@ -64,10 +64,12 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
     private val documentsTableModel = DefaultTableModel(arrayOf("Document ID", "Fields"), 0)
     private val documentsTable = JBTable(documentsTableModel)
     private val subcollectionsButton = JButton("Open Subcollections of Selected Document")
+    private val editButton = JButton("Edit Selected Document")
 
     private var restClient: FirestoreRestClient? = null
     private var currentDocuments: List<FirestoreDocument> = emptyList()
     private var currentPath: String = ""
+    private var currentCollectionPath: String? = null
 
     init {
         val topPanel = JPanel(GridLayout(2, 3, 4, 4)).apply {
@@ -84,11 +86,16 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
             add(rootButton, BorderLayout.EAST)
         }
 
+        val documentActionsPanel = JPanel(GridLayout(1, 2, 4, 0)).apply {
+            add(subcollectionsButton)
+            add(editButton)
+        }
+
         val centerPanel = JPanel(BorderLayout()).apply {
             add(navPanel, BorderLayout.NORTH)
             add(JBScrollPane(collectionList), BorderLayout.WEST)
             add(JBScrollPane(documentsTable), BorderLayout.CENTER)
-            add(subcollectionsButton, BorderLayout.SOUTH)
+            add(documentActionsPanel, BorderLayout.SOUTH)
         }
 
         add(topPanel, BorderLayout.NORTH)
@@ -101,6 +108,7 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
             if (!it.valueIsAdjusting) collectionList.selectedValue?.let { collectionId -> loadDocuments(collectionId) }
         }
         subcollectionsButton.addActionListener { openSubcollectionsOfSelectedDocument() }
+        editButton.addActionListener { editSelectedDocument() }
     }
 
     private fun browseForServiceAccount() {
@@ -163,6 +171,7 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
     private fun loadDocuments(collectionId: String) {
         val client = restClient ?: return
         val collectionPath = if (currentPath.isBlank()) collectionId else "$currentPath/$collectionId"
+        currentCollectionPath = collectionPath
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val documents = client.listDocuments(collectionPath)
@@ -191,6 +200,36 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
         val documentsPrefix = "/documents/"
         val relativePath = document.name.substringAfter(documentsPrefix, document.name)
         navigateTo(relativePath)
+    }
+
+    private fun editSelectedDocument() {
+        val row = documentsTable.selectedRow
+        if (row < 0 || row >= currentDocuments.size) {
+            Messages.showErrorDialog(project, "Select a document row first.", "Firestore Companion")
+            return
+        }
+        val document = currentDocuments[row]
+        val dialog = EditDocumentDialog(document.id, document.fields)
+        if (!dialog.showAndGet()) return
+
+        val changed = try {
+            dialog.changedFields()
+        } catch (e: IllegalArgumentException) {
+            Messages.showErrorDialog(project, e.message ?: e.toString(), "Firestore Companion")
+            return
+        }
+        if (changed.entries.isEmpty()) return
+
+        val client = restClient ?: return
+        val collectionPath = currentCollectionPath
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                client.patchDocument(document.name, changed)
+                onEdt { collectionPath?.let { loadDocuments(it.substringAfterLast('/', it)) } }
+            } catch (e: Exception) {
+                onEdt { Messages.showErrorDialog(project, e.message ?: e.toString(), "Firestore Companion") }
+            }
+        }
     }
 
     private fun onEdt(action: () -> Unit) {

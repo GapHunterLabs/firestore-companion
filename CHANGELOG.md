@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+## [0.2.0]
+
+### Added
+
+- Document editing in the tool window: "Edit Selected Document" opens a
+  dialog with one row per field. Scalar fields (string, integer,
+  double, boolean) are editable in place; map/array/geoPoint/
+  reference/timestamp/null fields stay read-only, same deliberate
+  scope cut as everything else in this plugin. Saves only the fields
+  that actually changed, via the `patchDocument` REST call that
+  already existed (tested since 0.1.0, only unwired to the UI until
+  now).
+
 ## [0.1.0]
 
 ### Added
@@ -17,5 +30,6 @@
   dependency) with a tested (not yet UI-wired) `PATCH` for field
   updates.
 
-[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/GapHunterLabs/firestore-companion/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/GapHunterLabs/firestore-companion/commits/0.1.0
