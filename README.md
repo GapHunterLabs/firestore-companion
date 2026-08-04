@@ -1,8 +1,8 @@
 # Firestore Companion
 
-Browse Firestore collections, documents, and subcollections in a tool
-window, authenticating with a GCP service account key via simple REST
-calls.
+Browse and edit Firestore collections, documents, and subcollections in
+a tool window, authenticating with a GCP service account key via
+simple REST calls.
 
 ## Why it exists
 
@@ -56,13 +56,14 @@ complaints (same exact error, 3 users, 8+ months):
 - **All network I/O runs off the EDT** (`executeOnPooledThread`), with
   results only ever applied to Swing via `invokeLater`.
 
-### v1 scope cuts (documented, not silent)
+### v0.2 scope cuts (documented, not silent)
 
-Field editing is implemented and tested at the REST layer
-(`FirestoreRestClient.patchDocument`, a real `PATCH` with the update
-mask built from field names) but not yet wired into the tool window UI
--- v1 is read-only browsing. A full field-editing UI is deferred to a
-later version rather than shipped rushed.
+Editing covers scalar fields only -- string, integer, double, boolean.
+`map`/`array`/`geoPoint`/`reference`/`timestamp`/`null` fields show as
+read-only in the edit dialog rather than a half-built nested editor;
+`FirestoreFieldEditor` always rebuilds a field as its *original* type,
+so an edit can never silently turn a `stringValue` into something
+Firestore rejects.
 
 ## Usage
 
@@ -70,7 +71,8 @@ Open the "Firestore" tool window, set the path to your service account
 JSON key file and your GCP project ID, and click Connect. Select a
 collection on the left to see its documents in the table; select a
 document row and click "Open Subcollections of Selected Document" to
-drill into that document's own subcollections.
+drill into that document's own subcollections, or "Edit Selected
+Document" to change any of its scalar fields and save.
 
 ## Enterprise / Team Licensing
 
