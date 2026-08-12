@@ -77,7 +77,7 @@ Document" to change any of its scalar fields and save.
 ## Enterprise / Team Licensing
 
 Need enterprise features, custom rules, or team licensing? Contact us at
-**kennyj.diazm@gmail.com**.
+**gaphunterlabs@gmail.com**.
 
 ## Development
 
