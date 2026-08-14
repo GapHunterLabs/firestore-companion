@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.2.1]
+
+### Fixed
+
+- Tool window content (service account/project ID fields, path label,
+  collection list, documents table) was rendering flush against the
+  tool window's own border, with no margin — fixed with an 8px empty
+  border on the root panel.
+
 ## [0.2.0]
 
 ### Added
@@ -30,6 +39,7 @@
   dependency) with a tested (not yet UI-wired) `PATCH` for field
   updates.
 
-[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.1...HEAD
+[0.2.1]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/GapHunterLabs/firestore-companion/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/GapHunterLabs/firestore-companion/commits/0.1.0

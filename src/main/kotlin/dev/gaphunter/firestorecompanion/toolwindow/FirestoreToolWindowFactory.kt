@@ -13,6 +13,7 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.table.JBTable
+import com.intellij.util.ui.JBUI
 import dev.gaphunter.firestorecompanion.auth.JwtBuilder
 import dev.gaphunter.firestorecompanion.auth.OAuthTokenClient
 import dev.gaphunter.firestorecompanion.auth.ServiceAccountParser
@@ -72,6 +73,8 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
     private var currentCollectionPath: String? = null
 
     init {
+        border = JBUI.Borders.empty(8)
+
         val topPanel = JPanel(GridLayout(2, 3, 4, 4)).apply {
             add(JLabel("Service account JSON:"))
             add(serviceAccountPathField)
