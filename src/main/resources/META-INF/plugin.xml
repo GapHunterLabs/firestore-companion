@@ -29,6 +29,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Firestore" anchor="right"
+                    icon="/icons/toolWindow.svg"
                     factoryClass="dev.gaphunter.firestorecompanion.toolwindow.FirestoreToolWindowFactory"/>
     </extensions>
 </idea-plugin>
