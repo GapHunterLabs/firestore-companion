@@ -28,6 +28,7 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="Firestore Companion" displayType="BALLOON"/>
         <toolWindow id="Firestore" anchor="right"
                     icon="/icons/toolWindow.svg"
                     factoryClass="dev.gaphunter.firestorecompanion.toolwindow.FirestoreToolWindowFactory"/>

@@ -20,6 +20,7 @@ import dev.gaphunter.firestorecompanion.auth.ServiceAccountParser
 import dev.gaphunter.firestorecompanion.rest.FirestoreDocument
 import dev.gaphunter.firestorecompanion.rest.FirestoreRestClient
 import dev.gaphunter.firestorecompanion.rest.FirestoreValueFormatter
+import dev.gaphunter.firestorecompanion.review.ReviewPrompt
 import java.awt.BorderLayout
 import java.awt.GridLayout
 import java.io.File
@@ -139,6 +140,10 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
                 val accessToken = OAuthTokenClient().fetchAccessToken(credentials, assertion)
                 restClient = FirestoreRestClient(projectId, accessToken)
                 navigateTo("")
+                // Real, explicit connection success -- the strongest single
+                // "used this for real" signal this plugin has, never fired
+                // for a failed auth attempt (caught below).
+                ReviewPrompt.recordHit(project)
                 onEdt { connectButton.isEnabled = true }
             } catch (e: Exception) {
                 onEdt {
