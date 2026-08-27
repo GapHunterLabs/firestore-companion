@@ -14,5 +14,5 @@ error message when a required field is missing:
 
 To screenshot the actual browsing UI (collections/documents/table),
 you need a real GCP project with a real service account key -- not
-included here, and never should be (see `CONSTITUTION.md` §1/testing
-guidance: never test against a real Firebase project in this repo).
+included here, and never should be: never test against a real
+Firebase project in this repo.
