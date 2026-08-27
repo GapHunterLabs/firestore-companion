@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.2.3]
+
+### Added
+
+- Review/star CTA: after 5 successful Firestore connections (never
+  counted for a failed auth attempt), a one-time notification asks
+  whether to rate the plugin on Marketplace, with a permanent "Don't
+  ask again" option.
+
 ## [0.2.2]
 
 ### Fixed
@@ -47,7 +56,9 @@
   dependency) with a tested (not yet UI-wired) `PATCH` for field
   updates.
 
-[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.1...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.3...HEAD
+[0.2.3]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.2...0.2.3
+[0.2.2]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/GapHunterLabs/firestore-companion/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/GapHunterLabs/firestore-companion/commits/0.1.0
