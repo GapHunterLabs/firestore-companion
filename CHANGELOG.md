@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+## [0.2.4]
+
+### Fixed
+
+- A collection or document ID containing a space (or another character
+  that isn't valid raw in a URI) is now percent-encoded per path
+  segment before building any Firestore REST URL. Firestore IDs can
+  contain such characters, and the real HTTP transport
+  (`java.net.URI.create`) throws an opaque `IllegalArgumentException`
+  on a literal space -- exactly the kind of crash this plugin exists
+  to avoid. Affects browsing a collection/subcollection by name and
+  saving an edited document.
+- "Rate on Marketplace" now links to this plugin's own reviews page
+  instead of the vendor page.
+
 ## [0.2.3]
 
 ### Added
@@ -56,7 +71,8 @@
   dependency) with a tested (not yet UI-wired) `PATCH` for field
   updates.
 
-[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.3...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.4...HEAD
+[0.2.4]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.3...0.2.4
 [0.2.3]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.2...0.2.3
 [0.2.2]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.0...0.2.1

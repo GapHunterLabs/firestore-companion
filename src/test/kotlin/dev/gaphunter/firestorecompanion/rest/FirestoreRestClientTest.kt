@@ -131,6 +131,40 @@ class FirestoreRestClientTest {
     }
 
     @Test
+    fun `a collection name with a space is percent-encoded in the URL, not sent raw`() {
+        // Firestore collection/document IDs can contain spaces and other
+        // characters that aren't valid raw in a URI -- java.net.URI.create
+        // (used by the real, non-injected HTTP transport) throws
+        // IllegalArgumentException on a literal space in the path, exactly
+        // the kind of opaque crash this whole plugin exists to avoid.
+        var requestedUrl: String? = null
+        val client = FirestoreRestClient(
+            projectId = "p",
+            accessToken = "t",
+            httpGet = { url -> requestedUrl = url; """{"documents": []}""" },
+            httpPost = { _, _ -> error("not expected") },
+            httpPatch = { _, _ -> error("not expected") },
+        )
+        client.listDocuments("my collection")
+        assertTrue("expected the space to be percent-encoded, got: $requestedUrl", requestedUrl!!.contains("%20"))
+        assertTrue(!requestedUrl!!.contains("my collection"))
+    }
+
+    @Test
+    fun `a document path with a space in a segment is percent-encoded per-segment, slashes preserved`() {
+        var requestedUrl: String? = null
+        val client = FirestoreRestClient(
+            projectId = "p",
+            accessToken = "t",
+            httpGet = { error("not expected") },
+            httpPost = { url, _ -> requestedUrl = url; """{"collectionIds": []}""" },
+            httpPatch = { _, _ -> error("not expected") },
+        )
+        client.listSubcollectionIds("users/alice smith")
+        assertTrue("expected: $requestedUrl", requestedUrl!!.contains("users/alice%20smith:listCollectionIds"))
+    }
+
+    @Test
     fun `patch sends the fields and update mask for each key`() {
         var patchedUrl: String? = null
         var patchedBody: String? = null
