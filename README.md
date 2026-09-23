@@ -55,6 +55,12 @@ complaints (same exact error, 3 users, 8+ months):
   access token exist only in memory for the current session.
 - **All network I/O runs off the EDT** (`executeOnPooledThread`), with
   results only ever applied to Swing via `invokeLater`.
+- **Collection/document IDs with spaces or other characters that
+  aren't valid raw in a URI are percent-encoded per path segment**
+  (since 0.2.4) -- Firestore IDs can contain them, and the same
+  `java.net.URI.create` used for the real network calls throws an
+  opaque `IllegalArgumentException` on a literal space, exactly the
+  kind of crash this plugin exists to avoid.
 
 ### v0.2 scope cuts (documented, not silent)
 

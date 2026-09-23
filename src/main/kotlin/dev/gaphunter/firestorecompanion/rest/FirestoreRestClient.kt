@@ -35,7 +35,7 @@ class FirestoreRestClient(
 
     /** [documentPath] is relative to the documents root, e.g. "users/abc123". */
     fun listSubcollectionIds(documentPath: String): List<String> =
-        listCollectionIds("$baseUrl/$documentPath:listCollectionIds")
+        listCollectionIds("$baseUrl/${encodePath(documentPath)}:listCollectionIds")
 
     private fun listCollectionIds(url: String): List<String> {
         val root = parseOrThrow(httpPost(url, "{}"))
@@ -45,7 +45,7 @@ class FirestoreRestClient(
 
     /** [collectionPath] is relative to the documents root, e.g. "users" or "users/abc123/orders". */
     fun listDocuments(collectionPath: String): List<FirestoreDocument> {
-        val root = parseOrThrow(httpGet("$baseUrl/$collectionPath"))
+        val root = parseOrThrow(httpGet("$baseUrl/${encodePath(collectionPath)}"))
         val docs = root.entries["documents"] as? JsonNode.Arr ?: return emptyList()
         return docs.items.mapNotNull { doc ->
             val obj = doc as? JsonNode.Obj ?: return@mapNotNull null
@@ -60,10 +60,23 @@ class FirestoreRestClient(
         val fieldPaths = fields.entries.keys.joinToString("&") {
             "updateMask.fieldPaths=${URLEncoder.encode(it, StandardCharsets.UTF_8)}"
         }
-        val url = "https://firestore.googleapis.com/v1/$documentName?$fieldPaths"
+        val url = "https://firestore.googleapis.com/v1/${encodePath(documentName)}?$fieldPaths"
         val body = JsonWriter.write(JsonNode.Obj(linkedMapOf("fields" to fields)))
         parseOrThrow(httpPatch(url, body))
     }
+
+    /**
+     * Firestore collection/document IDs can contain spaces and other
+     * characters that aren't valid raw in a URI -- `java.net.URI.create`
+     * (used by the real HTTP transport below) throws
+     * `IllegalArgumentException` on a literal space, exactly the kind of
+     * opaque crash this plugin exists to avoid. Encodes each `/`-separated
+     * segment independently so the separators themselves are preserved.
+     */
+    private fun encodePath(path: String): String =
+        path.split('/').joinToString("/") { segment ->
+            URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20")
+        }
 
     private fun parseOrThrow(body: String): JsonNode.Obj {
         val root = try {
