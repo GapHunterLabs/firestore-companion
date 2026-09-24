@@ -237,7 +237,12 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
             Messages.showErrorDialog(project, "No documents loaded to export -- select a collection first.", "Firestore Companion")
             return
         }
-        val descriptor = FileSaverDescriptor("Export Collection to JSON", "Choose where to save the exported documents", "json")
+        // Force the vararg constructor (String, String, String...), not the fixed-arity
+        // (String, String, String) overload IntelliJ 2025.2+ added: that overload doesn't
+        // exist on sinceBuild=243, and a single bare "json" arg binds to it as an exact
+        // match, which is a real verifyPlugin NoSuchMethodError risk on 243, confirmed by
+        // diffing the actual FileSaverDescriptor.class across both SDK jars.
+        val descriptor = FileSaverDescriptor("Export Collection to JSON", "Choose where to save the exported documents", *arrayOf("json"))
         val wrapper = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
             .save(currentCollectionPath?.substringAfterLast('/', "collection") + ".json") ?: return
         try {
