@@ -38,14 +38,16 @@ object JsonWriter {
         }
     }
 
-    private fun formatNumber(value: Double): String =
+    /** Shared with [JsonPrettyWriter] so both writers escape numbers identically. */
+    internal fun formatNumber(value: Double): String =
         if (value == Math.floor(value) && !value.isInfinite() && Math.abs(value) < 1e15) {
             value.toLong().toString()
         } else {
             value.toString()
         }
 
-    private fun writeString(value: String, sb: StringBuilder) {
+    /** Shared with [JsonPrettyWriter] so both writers escape strings identically. */
+    internal fun writeString(value: String, sb: StringBuilder) {
         sb.append('"')
         for (c in value) {
             when (c) {

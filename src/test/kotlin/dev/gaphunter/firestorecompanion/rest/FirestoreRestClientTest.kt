@@ -1,5 +1,8 @@
 package dev.gaphunter.firestorecompanion.rest
 
+import dev.gaphunter.firestorecompanion.pro.QueryFilter
+import dev.gaphunter.firestorecompanion.pro.QueryOperator
+import dev.gaphunter.firestorecompanion.pro.QueryValueType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -162,6 +165,71 @@ class FirestoreRestClientTest {
         )
         client.listSubcollectionIds("users/alice smith")
         assertTrue("expected: $requestedUrl", requestedUrl!!.contains("users/alice%20smith:listCollectionIds"))
+    }
+
+    @Test
+    fun `queryDocuments posts a structured query and parses real runQuery response shape`() {
+        // Real Firestore REST API v1 :runQuery response shape -- a top-level
+        // ARRAY, each entry either {"document": {...}, "readTime": ...} or
+        // just a heartbeat {"readTime": ...} with no "document" at all.
+        val runQueryFixture = """
+            [
+              {
+                "document": {
+                  "name": "projects/acme-corp-prod/databases/(default)/documents/orders/o1",
+                  "fields": { "status": { "stringValue": "shipped" } }
+                },
+                "readTime": "2026-01-01T00:00:00.000000Z"
+              },
+              { "readTime": "2026-01-01T00:00:00.000000Z" }
+            ]
+        """.trimIndent()
+        var requestedUrl: String? = null
+        var requestedBody: String? = null
+        val client = FirestoreRestClient(
+            projectId = "acme-corp-prod",
+            accessToken = "fake-token",
+            httpGet = { error("not expected") },
+            httpPost = { url, body -> requestedUrl = url; requestedBody = body; runQueryFixture },
+            httpPatch = { _, _ -> error("not expected") },
+        )
+        val filter = QueryFilter("status", QueryOperator.EQUAL, QueryValueType.STRING, "shipped")
+        val docs = client.queryDocuments("orders", filter, limit = 50)
+
+        assertEquals(1, docs.size) // the heartbeat-only entry must not become a phantom document
+        assertEquals("o1", docs[0].id)
+        assertTrue(requestedUrl!!.endsWith(":runQuery"))
+        assertTrue(requestedBody!!.contains("\"fieldPath\":\"status\""))
+        assertTrue(requestedBody!!.contains("\"op\":\"EQUAL\""))
+    }
+
+    @Test
+    fun `queryDocuments against a subcollection targets the parent document, not the root`() {
+        var requestedUrl: String? = null
+        val client = FirestoreRestClient(
+            projectId = "p",
+            accessToken = "t",
+            httpGet = { error("not expected") },
+            httpPost = { url, _ -> requestedUrl = url; "[]" },
+            httpPatch = { _, _ -> error("not expected") },
+        )
+        client.queryDocuments("users/alice/orders", null, limit = 10)
+        assertTrue("expected: $requestedUrl", requestedUrl!!.endsWith("/documents/users/alice:runQuery"))
+    }
+
+    @Test
+    fun `queryDocuments surfaces a Firestore API error clearly`() {
+        val client = FirestoreRestClient(
+            projectId = "p",
+            accessToken = "bad-token",
+            httpGet = { error("not expected") },
+            httpPost = { _, _ -> """{"error": {"code": 400, "message": "Invalid field path."}}""" },
+            httpPatch = { _, _ -> error("not expected") },
+        )
+        val exception = assertThrows(FirestoreRestException::class.java) {
+            client.queryDocuments("orders", null, limit = 10)
+        }
+        assertTrue(exception.message!!.contains("Invalid field path"))
     }
 
     @Test

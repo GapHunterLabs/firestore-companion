@@ -3,6 +3,23 @@
     <id>dev.gaphunter.firestorecompanion</id>
     <name>Firestore Companion</name>
     <vendor>Gap Hunter Labs</vendor>
+    <!-- PENDING (pro/multi-project-query-export branch): once JetBrains
+         assigns the real Marketplace Monetization product code (Freemium,
+         15-day trial, approved by the user 2026-09-23), add
+         <product-descriptor code="..." release-date="YYYYMMDD"
+         release-version="..." optional="true"/> here, matching
+         license/CheckLicense.kt's PRODUCT_CODE exactly. Never add this
+         tag with a placeholder code: it changes the plugin's
+         descriptor for every user, licensed or not, so it only goes in
+         together with the real code, right before this branch merges
+         and republishes.
+         Also per ansible-companion's own real verifyPlugin failure (not
+         guessed): release-version must share its leading digits with the
+         plugin's own gradle.properties version, so this plugin's version
+         scheme will need to move from semver (0.2.x) to a date-based
+         scheme (e.g. 2026.1.0) at that same release, matching
+         JetBrains's documented example (release-version 20261 pairs with
+         plugin version 2026.1.x). -->
     <description><![CDATA[
         <p>Browse Firestore collections, documents, and subcollections in
         a tool window, authenticating with a GCP service account key --
@@ -22,7 +39,17 @@
         drill into a selected document's own subcollections. All network
         calls run off the EDT; the service account JSON's contents and
         the resulting access token are held in memory only, never logged
-        or persisted -- only the file path and project ID are saved.</p>
+        or persisted -- only the file path and project ID are saved.
+        Scalar fields (string, integer, double, boolean) are editable
+        in place from the same table.</p>
+        <p><b>Firestore Companion Pro:</b> saved project profiles to
+        switch between dev/staging/prod service accounts without
+        retyping both fields every time; a query/filter builder (field
+        + operator + value) against Firestore's own <code>:runQuery</code>
+        endpoint, instead of always listing an entire collection; and
+        exporting a collection's documents to a pretty-printed JSON
+        file for a quick local backup/debug snapshot, preserving int64
+        precision exactly as Firestore stores it.</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>

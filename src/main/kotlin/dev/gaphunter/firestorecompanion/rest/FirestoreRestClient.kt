@@ -3,6 +3,8 @@ package dev.gaphunter.firestorecompanion.rest
 import dev.gaphunter.firestorecompanion.json.JsonNode
 import dev.gaphunter.firestorecompanion.json.JsonWriter
 import dev.gaphunter.firestorecompanion.json.MinimalJsonParser
+import dev.gaphunter.firestorecompanion.pro.FirestoreQueryBuilder
+import dev.gaphunter.firestorecompanion.pro.QueryFilter
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
@@ -51,6 +53,44 @@ class FirestoreRestClient(
             val obj = doc as? JsonNode.Obj ?: return@mapNotNull null
             val name = (obj.entries["name"] as? JsonNode.Str)?.value ?: return@mapNotNull null
             val fields = obj.entries["fields"] as? JsonNode.Obj ?: JsonNode.Obj(LinkedHashMap())
+            FirestoreDocument(name = name, id = name.substringAfterLast('/'), fields = fields)
+        }
+    }
+
+    /**
+     * Pro feature: a structured query with an optional single field
+     * filter, via Firestore's `:runQuery` endpoint -- unlike
+     * [listDocuments], which always brings back every document in the
+     * collection. [collectionPath] uses the same convention as
+     * [listDocuments]/[listSubcollectionIds].
+     */
+    fun queryDocuments(collectionPath: String, filter: QueryFilter?, limit: Int = 100): List<FirestoreDocument> {
+        val (parentPath, collectionId) = FirestoreQueryBuilder.splitParentAndCollection(collectionPath)
+        val parentSegment = if (parentPath.isEmpty()) "" else "/${encodePath(parentPath)}"
+        val url = "$baseUrl$parentSegment:runQuery"
+        val body = JsonWriter.write(FirestoreQueryBuilder.buildRequestBody(collectionId, filter, limit))
+        val responseBody = httpPost(url, body)
+
+        val root = try {
+            MinimalJsonParser.parse(responseBody)
+        } catch (e: Exception) {
+            throw FirestoreRestException("Firestore returned a response that isn't valid JSON: ${e.message}")
+        }
+        if (root is JsonNode.Obj) {
+            // Firestore reports a query error as a JSON object, not the
+            // array :runQuery normally returns -- same "error" shape as
+            // every other endpoint.
+            val error = root.entries["error"] as? JsonNode.Obj
+            val message = (error?.entries?.get("message") as? JsonNode.Str)?.value
+            throw FirestoreRestException(if (message != null) "Firestore API error: $message" else "Firestore response was not a query result array")
+        }
+        val arr = root as? JsonNode.Arr ?: throw FirestoreRestException("Firestore response was not a query result array")
+        return arr.items.mapNotNull { entry ->
+            val obj = entry as? JsonNode.Obj ?: return@mapNotNull null
+            // A heartbeat/progress entry has no "document" key -- not every array element is a result.
+            val docObj = obj.entries["document"] as? JsonNode.Obj ?: return@mapNotNull null
+            val name = (docObj.entries["name"] as? JsonNode.Str)?.value ?: return@mapNotNull null
+            val fields = docObj.entries["fields"] as? JsonNode.Obj ?: JsonNode.Obj(LinkedHashMap())
             FirestoreDocument(name = name, id = name.substringAfterLast('/'), fields = fields)
         }
     }
