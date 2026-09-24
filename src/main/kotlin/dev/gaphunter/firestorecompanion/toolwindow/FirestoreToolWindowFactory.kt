@@ -4,6 +4,8 @@ import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.openapi.fileChooser.FileChooserFactory
+import com.intellij.openapi.fileChooser.FileSaverDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.wm.ToolWindow
@@ -17,6 +19,11 @@ import com.intellij.util.ui.JBUI
 import dev.gaphunter.firestorecompanion.auth.JwtBuilder
 import dev.gaphunter.firestorecompanion.auth.OAuthTokenClient
 import dev.gaphunter.firestorecompanion.auth.ServiceAccountParser
+import dev.gaphunter.firestorecompanion.license.CheckLicense
+import dev.gaphunter.firestorecompanion.pro.CollectionExporter
+import dev.gaphunter.firestorecompanion.pro.ProjectProfile
+import dev.gaphunter.firestorecompanion.pro.ProjectProfileStore
+import dev.gaphunter.firestorecompanion.pro.QueryFilter
 import dev.gaphunter.firestorecompanion.rest.FirestoreDocument
 import dev.gaphunter.firestorecompanion.rest.FirestoreRestClient
 import dev.gaphunter.firestorecompanion.rest.FirestoreValueFormatter
@@ -25,6 +32,7 @@ import java.awt.BorderLayout
 import java.awt.GridLayout
 import java.io.File
 import javax.swing.JButton
+import javax.swing.JComboBox
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.table.DefaultTableModel
@@ -54,6 +62,10 @@ class FirestoreToolWindowFactory : ToolWindowFactory {
  */
 private class FirestorePanel(private val project: Project) : JPanel(BorderLayout()) {
     private val properties = PropertiesComponent.getInstance(project)
+    private val profileStore = ProjectProfileStore(properties)
+
+    /** Fail-closed: null (facade not ready) and false are both treated as unlicensed everywhere a Pro action is gated. */
+    private val isPro: Boolean = CheckLicense.isLicensed() == true
 
     private val serviceAccountPathField = JBTextField(properties.getValue(PROP_SERVICE_ACCOUNT_PATH, ""))
     private val projectIdField = JBTextField(properties.getValue(PROP_PROJECT_ID, ""))
@@ -68,21 +80,41 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
     private val subcollectionsButton = JButton("Open Subcollections of Selected Document")
     private val editButton = JButton("Edit Selected Document")
 
+    // Pro-only: multi-project profiles, query filter, JSON export. None
+    // of these widgets are added to the layout at all when !isPro --
+    // fail-closed by construction, not just disabled-but-visible.
+    private val profileCombo = JComboBox<String>()
+    private val saveProfileButton = JButton("Save Profile")
+    private val deleteProfileButton = JButton("Delete Profile")
+    private val filterButton = JButton("Filter...")
+    private val clearFilterButton = JButton("Clear Filter")
+    private val exportButton = JButton("Export Collection to JSON...")
+
     private var restClient: FirestoreRestClient? = null
     private var currentDocuments: List<FirestoreDocument> = emptyList()
     private var currentPath: String = ""
     private var currentCollectionPath: String? = null
+    private var currentFilter: QueryFilter? = null
 
     init {
         border = JBUI.Borders.empty(8)
 
-        val topPanel = JPanel(GridLayout(2, 3, 4, 4)).apply {
+        val topPanel = JPanel(GridLayout(if (isPro) 3 else 2, 3, 4, 4)).apply {
             add(JLabel("Service account JSON:"))
             add(serviceAccountPathField)
             add(browseButton)
             add(JLabel("Project ID:"))
             add(projectIdField)
             add(connectButton)
+            if (isPro) {
+                add(JLabel("Profile:"))
+                add(profileCombo)
+                val profileButtons = JPanel(GridLayout(1, 2, 2, 0)).apply {
+                    add(saveProfileButton)
+                    add(deleteProfileButton)
+                }
+                add(profileButtons)
+            }
         }
 
         val navPanel = JPanel(BorderLayout()).apply {
@@ -90,9 +122,15 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
             add(rootButton, BorderLayout.EAST)
         }
 
-        val documentActionsPanel = JPanel(GridLayout(1, 2, 4, 0)).apply {
+        val actionCount = if (isPro) 5 else 2
+        val documentActionsPanel = JPanel(GridLayout(1, actionCount, 4, 0)).apply {
             add(subcollectionsButton)
             add(editButton)
+            if (isPro) {
+                add(filterButton)
+                add(clearFilterButton)
+                add(exportButton)
+            }
         }
 
         val centerPanel = JPanel(BorderLayout()).apply {
@@ -113,6 +151,100 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
         }
         subcollectionsButton.addActionListener { openSubcollectionsOfSelectedDocument() }
         editButton.addActionListener { editSelectedDocument() }
+
+        if (isPro) {
+            refreshProfileCombo()
+            profileCombo.addActionListener { applySelectedProfile() }
+            saveProfileButton.addActionListener { saveCurrentAsProfile() }
+            deleteProfileButton.addActionListener { deleteSelectedProfile() }
+            filterButton.addActionListener { openFilterDialog() }
+            clearFilterButton.addActionListener { clearFilter() }
+            exportButton.addActionListener { exportCurrentCollection() }
+        }
+    }
+
+    private fun refreshProfileCombo() {
+        val names = profileStore.listProfiles().map { it.name }
+        profileCombo.model = javax.swing.DefaultComboBoxModel(names.toTypedArray())
+        profileStore.activeProfileName()?.let { profileCombo.selectedItem = it }
+    }
+
+    private fun applySelectedProfile() {
+        val name = profileCombo.selectedItem as? String ?: return
+        val profile = profileStore.listProfiles().firstOrNull { it.name == name } ?: return
+        serviceAccountPathField.text = profile.serviceAccountPath
+        projectIdField.text = profile.projectId
+        profileStore.setActiveProfile(name)
+    }
+
+    private fun saveCurrentAsProfile() {
+        val serviceAccountPath = serviceAccountPathField.text.trim()
+        val projectId = projectIdField.text.trim()
+        if (serviceAccountPath.isBlank() || projectId.isBlank()) {
+            Messages.showErrorDialog(project, "Set both the service account JSON path and the project ID before saving a profile.", "Firestore Companion")
+            return
+        }
+        val name = Messages.showInputDialog(project, "Profile name (e.g. dev, staging, prod):", "Save Profile", null) ?: return
+        if (name.isBlank()) return
+        profileStore.saveProfile(ProjectProfile(name.trim(), serviceAccountPath, projectId))
+        profileStore.setActiveProfile(name.trim())
+        refreshProfileCombo()
+    }
+
+    private fun deleteSelectedProfile() {
+        val name = profileCombo.selectedItem as? String ?: return
+        profileStore.deleteProfile(name)
+        refreshProfileCombo()
+    }
+
+    private fun openFilterDialog() {
+        val collectionPath = currentCollectionPath
+        if (collectionPath == null) {
+            Messages.showErrorDialog(project, "Select a collection first.", "Firestore Companion")
+            return
+        }
+        val dialog = QueryFilterDialog(collectionPath.substringAfterLast('/', collectionPath))
+        if (!dialog.showAndGet()) return
+        val filter = try {
+            dialog.buildFilter()
+        } catch (e: IllegalArgumentException) {
+            Messages.showErrorDialog(project, e.message ?: e.toString(), "Firestore Companion")
+            return
+        }
+        currentFilter = filter
+        runQuery(collectionPath, filter)
+    }
+
+    private fun clearFilter() {
+        currentFilter = null
+        currentCollectionPath?.let { loadDocuments(it.substringAfterLast('/', it)) }
+    }
+
+    private fun runQuery(collectionPath: String, filter: QueryFilter) {
+        val client = restClient ?: return
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                val documents = client.queryDocuments(collectionPath, filter)
+                onEdt { setDocuments(documents) }
+            } catch (e: Exception) {
+                onEdt { Messages.showErrorDialog(project, e.message ?: e.toString(), "Firestore Companion") }
+            }
+        }
+    }
+
+    private fun exportCurrentCollection() {
+        if (currentDocuments.isEmpty()) {
+            Messages.showErrorDialog(project, "No documents loaded to export -- select a collection first.", "Firestore Companion")
+            return
+        }
+        val descriptor = FileSaverDescriptor("Export Collection to JSON", "Choose where to save the exported documents", "json")
+        val wrapper = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
+            .save(currentCollectionPath?.substringAfterLast('/', "collection") + ".json") ?: return
+        try {
+            wrapper.file.writeText(CollectionExporter.toJson(currentDocuments), Charsets.UTF_8)
+        } catch (e: Exception) {
+            Messages.showErrorDialog(project, e.message ?: e.toString(), "Firestore Companion")
+        }
     }
 
     private fun browseForServiceAccount() {

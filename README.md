@@ -71,6 +71,28 @@ read-only in the edit dialog rather than a half-built nested editor;
 so an edit can never silently turn a `stringValue` into something
 Firestore rejects.
 
+## Firestore Companion Pro
+
+Optional paid tier on top of everything above (all free-tier features
+stay free, no exceptions). Gated by `CheckLicense.isLicensed()`,
+fail-closed -- a `null`/unknown license state is treated as
+unlicensed, same as an explicit `false`, and the Pro widgets aren't
+even added to the layout when unlicensed (not just disabled-but-visible):
+
+- **Saved project profiles.** The free tier stores exactly one service
+  account path + one project ID. Pro adds a profile selector (name +
+  service account path + project ID), so switching between
+  dev/staging/prod doesn't mean retyping both fields every time.
+- **Query/filter builder.** `listDocuments` (free tier) always brings
+  back every document in a collection -- impractical once a collection
+  is large. Pro adds a single field/operator/value filter against
+  Firestore's own `:runQuery` structured-query endpoint.
+- **Export a collection to JSON.** A pretty-printed local snapshot of
+  a collection's documents, keeping the raw Firestore typed-value
+  wrapper (`{"integerValue": "9223372036854775807"}`, not a lossy
+  reformatted number) so int64 precision survives the round trip --
+  same rule `FirestoreFieldEditor` already applies to editing.
+
 ## Usage
 
 Open the "Firestore" tool window, set the path to your service account

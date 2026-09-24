@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### Added (pro/multi-project-query-export branch, not yet released)
+
+- Firestore Companion Pro: saved multi-project profiles (dev/staging/
+  prod), a query/filter builder against Firestore's `:runQuery`
+  endpoint, and exporting a collection to a pretty-printed JSON file.
+  Gated by `CheckLicense.isLicensed()`, fail-closed. Awaiting the real
+  Marketplace Monetization product code before this branch merges and
+  the plugin.xml `<product-descriptor>` goes in for real.
+
 ## [0.2.4]
 
 ### Fixed
