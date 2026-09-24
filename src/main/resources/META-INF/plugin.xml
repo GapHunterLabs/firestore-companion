@@ -3,23 +3,23 @@
     <id>dev.gaphunter.firestorecompanion</id>
     <name>Firestore Companion</name>
     <vendor>Gap Hunter Labs</vendor>
-    <!-- PENDING (pro/multi-project-query-export branch): once JetBrains
-         assigns the real Marketplace Monetization product code (Freemium,
-         15-day trial, approved by the user 2026-09-23), add
-         <product-descriptor code="..." release-date="YYYYMMDD"
-         release-version="..." optional="true"/> here, matching
-         license/CheckLicense.kt's PRODUCT_CODE exactly. Never add this
-         tag with a placeholder code: it changes the plugin's
-         descriptor for every user, licensed or not, so it only goes in
-         together with the real code, right before this branch merges
-         and republishes.
-         Also per ansible-companion's own real verifyPlugin failure (not
-         guessed): release-version must share its leading digits with the
-         plugin's own gradle.properties version, so this plugin's version
-         scheme will need to move from semver (0.2.x) to a date-based
-         scheme (e.g. 2026.1.0) at that same release, matching
-         JetBrains's documented example (release-version 20261 pairs with
-         plugin version 2026.1.x). -->
+    <!-- Required for the Freemium pricing model JetBrains approved for this
+         plugin. optional="true" is what makes this Freemium rather than
+         fully Paid: the plugin still installs and runs with no license at
+         all, only the Pro-tier features gate on CheckLicense.isLicensed().
+         release-version must share its leading digits with the plugin's
+         own version (same pattern already confirmed by a real, local
+         verifyPlugin failure in ansible-companion, not guessed here): this
+         plugin's version scheme moves from semver (0.2.x, same scheme
+         every other plugin in this catalog still uses) to 2026.1.0
+         starting with this release, matching JetBrains's own documented
+         example exactly (release-version 20261 pairs with plugin version
+         2026.1.x). Only this plugin's version scheme changed; the rest of
+         the catalog is not enrolled in Paid or Freemium and keeps semver
+         unchanged.
+         Do not use a literal double hyphen anywhere in this comment, the
+         XML spec forbids it inside comments and patchPluginXml will crash. -->
+    <product-descriptor code="PFIRESTORECOMPA" release-date="20260923" release-version="20261" optional="true"/>
     <description><![CDATA[
         <p>Browse Firestore collections, documents, and subcollections in
         a tool window, authenticating with a GCP service account key --

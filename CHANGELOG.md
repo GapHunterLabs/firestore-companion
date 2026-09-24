@@ -4,14 +4,22 @@
 
 ## [Unreleased]
 
-### Added (pro/multi-project-query-export branch, not yet released)
+## [2026.1.0]
 
-- Firestore Companion Pro: saved multi-project profiles (dev/staging/
-  prod), a query/filter builder against Firestore's `:runQuery`
-  endpoint, and exporting a collection to a pretty-printed JSON file.
-  Gated by `CheckLicense.isLicensed()`, fail-closed. Awaiting the real
-  Marketplace Monetization product code before this branch merges and
-  the plugin.xml `<product-descriptor>` goes in for real.
+### Added
+
+- **Firestore Companion Pro**, an optional paid tier on top of
+  everything below (all free-tier features stay free, no exceptions):
+  saved multi-project profiles (dev/staging/prod, switchable without
+  retyping the service account path and project ID every time), a
+  query/filter builder (field + operator + typed value) against
+  Firestore's own `:runQuery` structured-query endpoint instead of
+  always listing an entire collection, and exporting a collection's
+  documents to a pretty-printed JSON file, preserving int64 precision
+  exactly as Firestore stores it (same rule already applied to
+  editing). Version scheme moves from semver to a date-based scheme
+  (required for the Freemium `<product-descriptor>` JetBrains assigns
+  by release-version, not a stylistic choice).
 
 ## [0.2.4]
 
@@ -80,7 +88,8 @@
   dependency) with a tested (not yet UI-wired) `PATCH` for field
   updates.
 
-[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.4...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/2026.1.0...HEAD
+[2026.1.0]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.4...2026.1.0
 [0.2.4]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.3...0.2.4
 [0.2.3]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.2...0.2.3
 [0.2.2]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.1...0.2.2

@@ -31,19 +31,16 @@ import java.util.Base64
  * package and PRODUCT_CODE differ. Do not modify the certificate/crypto
  * logic below when adapting this file.
  *
- * PRODUCT_CODE is a PLACEHOLDER -- JetBrains only assigns the real code
- * once "Gap Hunter Labs" enrolls this specific plugin for Monetization
- * (Freemium, 15-day trial, approved 2026-09-23) in the Marketplace web
- * UI, a manual step with no API. Update PRODUCT_CODE here AND
- * plugin.xml's `<product-descriptor code="...">` to the real value
- * once it's known -- the two must match exactly or
- * `LicensingFacade.getConfirmationStamp` will not resolve. Until then
- * this file compiles and is unit-testable (see CheckLicenseTest), but
- * `isLicensed()` can never return true against a real license.
+ * PRODUCT_CODE is the real code JetBrains assigned when "Gap Hunter
+ * Labs" enrolled this plugin for Marketplace Monetization (Freemium,
+ * 15-day trial, approved by the user 2026-09-23, code given
+ * 2026-09-23). It must also match plugin.xml's
+ * `<product-descriptor code="...">` tag exactly, or
+ * `LicensingFacade.getConfirmationStamp` will not resolve.
  */
 object CheckLicense {
     /** Must be the same value as plugin.xml's `<product-descriptor code="...">` tag. */
-    const val PRODUCT_CODE = "PFIRESTORECOMP__PLACEHOLDER"
+    const val PRODUCT_CODE = "PFIRESTORECOMPA"
 
     private const val KEY_PREFIX = "key:"
     private const val STAMP_PREFIX = "stamp:"
