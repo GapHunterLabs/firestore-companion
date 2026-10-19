@@ -7,3 +7,5 @@ bin
 build
 node_modules
 *.iml
+firestore-debug.log
+*-debug.log

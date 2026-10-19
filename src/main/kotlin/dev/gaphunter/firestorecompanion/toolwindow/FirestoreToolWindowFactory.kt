@@ -26,6 +26,7 @@ import dev.gaphunter.firestorecompanion.pro.ProjectProfile
 import dev.gaphunter.firestorecompanion.pro.ProjectProfileStore
 import dev.gaphunter.firestorecompanion.pro.QueryFilter
 import dev.gaphunter.firestorecompanion.rest.FirestoreDocument
+import dev.gaphunter.firestorecompanion.rest.FirestoreEmulatorHost
 import dev.gaphunter.firestorecompanion.rest.FirestoreRestClient
 import dev.gaphunter.firestorecompanion.rest.FirestoreValueFormatter
 import dev.gaphunter.firestorecompanion.review.ReviewPrompt
@@ -40,6 +41,7 @@ import javax.swing.table.DefaultTableModel
 
 private const val PROP_SERVICE_ACCOUNT_PATH = "dev.gaphunter.firestorecompanion.serviceAccountPath"
 private const val PROP_PROJECT_ID = "dev.gaphunter.firestorecompanion.projectId"
+private const val PROP_EMULATOR_HOST = "dev.gaphunter.firestorecompanion.emulatorHost"
 
 class FirestoreToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
@@ -71,6 +73,12 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
 
     private val serviceAccountPathField = JBTextField(properties.getValue(PROP_SERVICE_ACCOUNT_PATH, ""))
     private val projectIdField = JBTextField(properties.getValue(PROP_PROJECT_ID, ""))
+
+    // Filled: the local Firestore emulator, no service account. Starts from the
+    // same FIRESTORE_EMULATOR_HOST variable the Firebase SDKs read.
+    private val emulatorHostField = JBTextField(
+        properties.getValue(PROP_EMULATOR_HOST) ?: System.getenv("FIRESTORE_EMULATOR_HOST").orEmpty()
+    ).apply { emptyText.text = "localhost:8080 (leave empty for Google Cloud)" }
     private val connectButton = JButton("Connect")
     private val browseButton = JButton("Browse...")
     private val pathLabel = JLabel("Path: (root)")
@@ -102,10 +110,13 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
     init {
         border = JBUI.Borders.empty(8)
 
-        val topPanel = JPanel(GridLayout(3, 3, 4, 4)).apply {
+        val topPanel = JPanel(GridLayout(4, 3, 4, 4)).apply {
             add(JLabel("Service account JSON:"))
             add(serviceAccountPathField)
             add(browseButton)
+            add(JLabel("Emulator host:"))
+            add(emulatorHostField)
+            add(JLabel("No service account needed"))
             add(JLabel("Project ID:"))
             add(projectIdField)
             add(connectButton)
@@ -133,13 +144,19 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
 
         val centerPanel = JPanel(BorderLayout()).apply {
             add(navPanel, BorderLayout.NORTH)
-            add(JBScrollPane(collectionList), BorderLayout.WEST)
+            // Fixed width: sized by its content, the list (and the table beside it) jumped
+            // every time a collection with shorter or longer IDs was opened.
+            add(JBScrollPane(collectionList).apply { preferredSize = JBUI.size(200, 0) }, BorderLayout.WEST)
             add(JBScrollPane(documentsTable), BorderLayout.CENTER)
             add(documentActionsPanel, BorderLayout.SOUTH)
         }
 
         add(topPanel, BorderLayout.NORTH)
         add(centerPanel, BorderLayout.CENTER)
+
+        // Document IDs are short; the fields summary gets most of the width.
+        documentsTable.columnModel.getColumn(0).preferredWidth = JBUI.scale(160)
+        documentsTable.columnModel.getColumn(1).preferredWidth = JBUI.scale(640)
 
         browseButton.addActionListener { browseForServiceAccount() }
         connectButton.addActionListener { connect() }
@@ -266,7 +283,7 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
         // diffing the actual FileSaverDescriptor.class across both SDK jars.
         val descriptor = FileSaverDescriptor("Export Collection to JSON", "Choose where to save the exported documents", *arrayOf("json"))
         val wrapper = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
-            .save(currentCollectionPath?.substringAfterLast('/', "collection") + ".json") ?: return
+            .save((currentCollectionPath?.substringAfterLast('/') ?: "collection") + ".json") ?: return
         try {
             wrapper.file.writeText(CollectionExporter.toJson(currentDocuments), Charsets.UTF_8)
         } catch (e: Exception) {
@@ -283,21 +300,42 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
     private fun connect() {
         val serviceAccountPath = serviceAccountPathField.text.trim()
         val projectId = projectIdField.text.trim()
-        if (serviceAccountPath.isBlank() || projectId.isBlank()) {
-            Messages.showErrorDialog(project, "Set both the service account JSON path and the project ID.", "Firestore Companion")
+        val emulatorHostText = emulatorHostField.text.trim()
+        val emulatorHost = if (emulatorHostText.isBlank()) {
+            null
+        } else {
+            try {
+                FirestoreEmulatorHost.parse(emulatorHostText)
+            } catch (e: IllegalArgumentException) {
+                Messages.showErrorDialog(project, e.message ?: e.toString(), "Firestore Companion")
+                return
+            }
+        }
+        if (projectId.isBlank() || (emulatorHost == null && serviceAccountPath.isBlank())) {
+            val message = if (emulatorHost == null) {
+                "Set both the service account JSON path and the project ID, or an emulator host and the project ID."
+            } else {
+                "Set the project ID the emulator data belongs to."
+            }
+            Messages.showErrorDialog(project, message, "Firestore Companion")
             return
         }
         properties.setValue(PROP_SERVICE_ACCOUNT_PATH, serviceAccountPath)
         properties.setValue(PROP_PROJECT_ID, projectId)
+        properties.setValue(PROP_EMULATOR_HOST, emulatorHost.orEmpty())
 
         connectButton.isEnabled = false
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                val rawJson = File(serviceAccountPath).readText(Charsets.UTF_8)
-                val credentials = ServiceAccountParser.parse(rawJson)
-                val assertion = JwtBuilder.buildSignedAssertion(credentials, System.currentTimeMillis() / 1000)
-                val accessToken = OAuthTokenClient().fetchAccessToken(credentials, assertion)
-                restClient = FirestoreRestClient(projectId, accessToken)
+                restClient = if (emulatorHost != null) {
+                    FirestoreRestClient(projectId, FirestoreEmulatorHost.TOKEN, FirestoreEmulatorHost.apiRoot(emulatorHost))
+                } else {
+                    val rawJson = File(serviceAccountPath).readText(Charsets.UTF_8)
+                    val credentials = ServiceAccountParser.parse(rawJson)
+                    val assertion = JwtBuilder.buildSignedAssertion(credentials, System.currentTimeMillis() / 1000)
+                    val accessToken = OAuthTokenClient().fetchAccessToken(credentials, assertion)
+                    FirestoreRestClient(projectId, accessToken)
+                }
                 navigateTo("")
                 // Real, explicit connection success -- the strongest single
                 // "used this for real" signal this plugin has, never fired

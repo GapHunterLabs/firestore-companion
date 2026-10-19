@@ -7,7 +7,7 @@ package dev.gaphunter.firestorecompanion.license
  */
 object ProAccess {
     @Volatile
-    var licenseCheck: () -> Boolean? = { CheckLicense.isLicensed() }
+    var licenseCheck: () -> Boolean? = { if (DevSandbox.isForced()) true else CheckLicense.isLicensed() }
 
     @Volatile
     var legacyCheck: () -> Boolean = { LegacyFreeFeatures.keepsMovedFeatures() }

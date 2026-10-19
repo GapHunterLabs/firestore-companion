@@ -40,14 +40,18 @@ won't claim otherwise. What actually happens:
   service account file, then REST calls go straight to
   `firestore.googleapis.com/v1`. We have no server in this path — we
   could not see this traffic even if we wanted to.
+- **With an emulator host set (version 2026.2.1 or later)**, the requests
+  go only to that host and port instead, over plain HTTP as the Firestore
+  emulator requires, with no service account and no call to Google. They
+  carry the emulator's fixed `owner` token, which is not a credential.
 - **No telemetry or usage data is ever sent.** The only network traffic
   is the Firestore reads/writes you explicitly perform.
 
 ## Credentials
 
-Only the *path* to your service account file and your project ID are
-saved locally (via the IDE's own settings storage) — neither is a
-secret by itself. The file's contents, the parsed private key, and the
+Only the *path* to your service account file, your project ID and, if you
+set one, the emulator host are saved locally (via the IDE's own settings
+storage) — none of them is a secret by itself. The file's contents, the parsed private key, and the
 resulting access token exist only in memory for the current IDE session;
 none of it is logged or persisted to disk by the plugin.
 

@@ -48,6 +48,9 @@ class EditDocumentDialog(
         return panel
     }
 
+    // The first editable field, never a read-only one.
+    override fun getPreferredFocusedComponent(): JComponent? = editors.values.firstOrNull()
+
     /** @throws IllegalArgumentException if an edited value doesn't parse as its field's type. */
     fun changedFields(): JsonNode.Obj {
         val changed = LinkedHashMap<String, JsonNode>()

@@ -19,6 +19,7 @@
         <p><b>Free</b></p>
         <ul>
           <li><b>Connect</b> with a service account JSON key and a project ID. A malformed key is reported by the exact missing or invalid field.</li>
+          <li><b>Local Firestore emulator</b>: connect by host and port (<code>localhost:8080</code>), with no service account.</li>
           <li><b>Collections and documents in a table</b>, with drill-down into each document's subcollections.</li>
           <li>The key's contents and the access token stay in memory. Only the key's file path and the project ID are saved.</li>
         </ul>

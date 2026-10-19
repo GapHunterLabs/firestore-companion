@@ -4,6 +4,38 @@
 
 ## [Unreleased]
 
+## [2026.2.1]
+
+### Added
+
+- **Local Firestore emulator.** A new "Emulator host" field (`localhost:8080`)
+  connects to the emulator from the Firebase tools over plain HTTP, with no
+  service account. It starts from `FIRESTORE_EMULATOR_HOST` when that
+  variable is set. Browsing, subcollections and every Pro feature work the
+  same as against Google Cloud. Free.
+- `demo/emulator/`: an emulator configuration and a script that loads a
+  small sample shop (customers, products, orders with an `items`
+  subcollection), to try the plugin without a Google Cloud project.
+
+### Fixed
+
+- The filter dialog (Pro) opens with the cursor in "Field path", and the
+  edit dialog (Pro) in the first editable field. Before, typing right away
+  went nowhere and the filter failed with "Field path can't be empty".
+- The collection list keeps a fixed width. It used to resize to its
+  content, moving the documents table each time another collection or a
+  subcollection was opened.
+- The "Document ID" column no longer takes half of the table: the fields
+  summary gets most of the width.
+- Exporting a top-level collection to JSON (Pro) suggested the file name
+  `collection.json`; it now suggests the collection's name (`orders.json`),
+  as it already did for subcollections.
+
+### Changed
+
+- `PRIVACY.md` describes the emulator connection and the emulator host the
+  plugin saves in the project's settings.
+
 ## [2026.2.0]
 
 ### Changed

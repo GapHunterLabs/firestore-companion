@@ -2,7 +2,7 @@
 
 Browse Firestore collections, documents, and subcollections in a tool
 window, authenticating with a GCP service account key via simple REST
-calls. Editing, saved profiles, a query builder and JSON export are part
+calls, or against the local Firestore emulator with no key. Editing, saved profiles, a query builder and JSON export are part
 of Firestore Companion Pro.
 
 ## Why it exists
@@ -102,7 +102,11 @@ click, so a trial started while the tool window is open works right away:
 ## Usage
 
 Open the "Firestore" tool window, set the path to your service account
-JSON key file and your GCP project ID, and click Connect. Select a
+JSON key file and your GCP project ID, and click Connect. For the local
+Firestore emulator, fill "Emulator host" instead of the key file (for
+example `localhost:8080`, or leave it as `FIRESTORE_EMULATOR_HOST` sets it)
+and the project ID the emulator data belongs to: no service account is
+needed. `demo/emulator/` has a sample data set to try it. Select a
 collection on the left to see its documents in the table; select a
 document row and click "Open Subcollections of Selected Document" to
 drill into that document's own subcollections, or (Pro) "Edit Selected

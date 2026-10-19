@@ -42,6 +42,9 @@ class QueryFilterDialog(collectionName: String) : DialogWrapper(true) {
         return panel
     }
 
+    // Typing starts in the field path, the one field every filter needs.
+    override fun getPreferredFocusedComponent(): JComponent = fieldPathField
+
     /** @throws IllegalArgumentException if the field path is blank or the value doesn't parse as the chosen type. */
     fun buildFilter(): QueryFilter {
         val fieldPath = fieldPathField.text.trim()

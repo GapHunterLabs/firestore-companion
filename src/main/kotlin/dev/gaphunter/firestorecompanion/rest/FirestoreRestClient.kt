@@ -17,8 +17,8 @@ class FirestoreRestException(message: String) : Exception(message)
 data class FirestoreDocument(val name: String, val id: String, val fields: JsonNode.Obj)
 
 /**
- * Simple REST calls to firestore.googleapis.com/v1 -- no gRPC/heavy SDK
- * dependency, matching NEXT_BATCH_PLAN.md's explicit scope call.
+ * Simple REST calls to firestore.googleapis.com/v1, or to the local
+ * Firestore emulator through [apiRoot] -- no gRPC/heavy SDK dependency.
  * [httpGet]/[httpPost]/[httpPatch] are injectable so tests can supply a
  * captured real Firestore REST API response fixture instead of a live
  * project -- see FirestoreRestClientTest. Never called from the EDT; the
@@ -27,11 +27,13 @@ data class FirestoreDocument(val name: String, val id: String, val fields: JsonN
 class FirestoreRestClient(
     private val projectId: String,
     private val accessToken: String,
+    // Google Cloud by default; FirestoreEmulatorHost.apiRoot(...) for the local emulator.
+    private val apiRoot: String = CLOUD_API_ROOT,
     private val httpGet: (url: String) -> String = { url -> defaultGet(url, accessToken) },
     private val httpPost: (url: String, body: String) -> String = { url, body -> defaultPost(url, body, accessToken) },
     private val httpPatch: (url: String, body: String) -> String = { url, body -> defaultPatch(url, body, accessToken) },
 ) {
-    private val baseUrl = "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents"
+    private val baseUrl = "$apiRoot/projects/$projectId/databases/(default)/documents"
 
     fun listRootCollectionIds(): List<String> = listCollectionIds("$baseUrl:listCollectionIds")
 
@@ -100,7 +102,7 @@ class FirestoreRestClient(
         val fieldPaths = fields.entries.keys.joinToString("&") {
             "updateMask.fieldPaths=${URLEncoder.encode(it, StandardCharsets.UTF_8)}"
         }
-        val url = "https://firestore.googleapis.com/v1/${encodePath(documentName)}?$fieldPaths"
+        val url = "$apiRoot/${encodePath(documentName)}?$fieldPaths"
         val body = JsonWriter.write(JsonNode.Obj(linkedMapOf("fields" to fields)))
         parseOrThrow(httpPatch(url, body))
     }
@@ -134,6 +136,8 @@ class FirestoreRestClient(
     }
 
     companion object {
+        const val CLOUD_API_ROOT = "https://firestore.googleapis.com/v1"
+
         private val client = HttpClient.newHttpClient()
 
         private fun defaultGet(url: String, token: String): String {
