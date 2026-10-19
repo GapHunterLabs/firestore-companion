@@ -7,6 +7,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.fileChooser.FileSaverDescriptor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -283,7 +284,8 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
         // diffing the actual FileSaverDescriptor.class across both SDK jars.
         val descriptor = FileSaverDescriptor("Export Collection to JSON", "Choose where to save the exported documents", *arrayOf("json"))
         val wrapper = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
-            .save((currentCollectionPath?.substringAfterLast('/') ?: "collection") + ".json") ?: return
+            // Starts in the project folder, not wherever the last file dialog of any app was.
+            .save(project.guessProjectDir(), (currentCollectionPath?.substringAfterLast('/') ?: "collection") + ".json") ?: return
         try {
             wrapper.file.writeText(CollectionExporter.toJson(currentDocuments), Charsets.UTF_8)
         } catch (e: Exception) {

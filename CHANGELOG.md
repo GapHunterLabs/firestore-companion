@@ -29,7 +29,8 @@
   summary gets most of the width.
 - Exporting a top-level collection to JSON (Pro) suggested the file name
   `collection.json`; it now suggests the collection's name (`orders.json`),
-  as it already did for subcollections.
+  as it already did for subcollections. The save dialog opens in the
+  project's folder instead of the last folder any file dialog used.
 
 ### Changed
 
