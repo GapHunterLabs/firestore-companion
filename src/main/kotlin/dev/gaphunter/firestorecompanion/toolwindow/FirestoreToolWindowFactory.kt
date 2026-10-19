@@ -6,6 +6,7 @@ import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.fileChooser.FileSaverDescriptor
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.Messages
@@ -44,7 +45,9 @@ private const val PROP_SERVICE_ACCOUNT_PATH = "dev.gaphunter.firestorecompanion.
 private const val PROP_PROJECT_ID = "dev.gaphunter.firestorecompanion.projectId"
 private const val PROP_EMULATOR_HOST = "dev.gaphunter.firestorecompanion.emulatorHost"
 
-class FirestoreToolWindowFactory : ToolWindowFactory {
+// DumbAware: nothing here reads the IDE's indexes, so the window stays usable while the IDE
+// indexes (at startup, or right after an export lands in the project).
+class FirestoreToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val panel = FirestorePanel(project)
         val content = ContentFactory.getInstance().createContent(panel, "", false)

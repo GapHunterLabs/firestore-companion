@@ -19,6 +19,10 @@
 
 ### Fixed
 
+- The Firestore tool window no longer goes blank ("This view is not
+  available until indexes are built") while the IDE indexes, at startup or
+  right after an export is saved into the project. It never needed the
+  indexes.
 - The filter dialog (Pro) opens with the cursor in "Field path", and the
   edit dialog (Pro) in the first editable field. Before, typing right away
   went nowhere and the filter failed with "Field path can't be empty".
