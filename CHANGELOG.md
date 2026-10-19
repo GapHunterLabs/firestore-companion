@@ -4,10 +4,26 @@
 
 ## [Unreleased]
 
+## [2026.2.0]
+
 ### Changed
 
+- **Editing documents is now part of Firestore Companion Pro.** Any
+  installation that runs this version or a later one before November 2,
+  2026 keeps it without a license. Connecting, browsing collections and
+  documents, and subcollections stay free.
+- The Pro buttons (editing, profiles, the query builder and JSON export)
+  are always visible, marked "(Pro)" without a license, and open the
+  license dialog when clicked.
+- The plugin description lists the free and the Pro features separately.
 - `PRIVACY.md` describes the values the plugin keeps in the IDE's local
   settings.
+
+### Fixed
+
+- Starting a trial or adding a license while the Firestore tool window
+  was open didn't unlock Pro until the project was reopened. The license
+  is now checked on every click.
 
 ## [2026.1.0]
 

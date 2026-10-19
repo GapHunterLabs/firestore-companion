@@ -8,48 +8,29 @@
          fully Paid: the plugin still installs and runs with no license at
          all, only the Pro-tier features gate on CheckLicense.isLicensed().
          release-version must share its leading digits with the plugin's
-         own version (same pattern already confirmed by a real, local
-         verifyPlugin failure in ansible-companion, not guessed here): this
-         plugin's version scheme moves from semver (0.2.x, same scheme
-         every other plugin in this catalog still uses) to 2026.1.0
-         starting with this release, matching JetBrains's own documented
-         example exactly (release-version 20261 pairs with plugin version
-         2026.1.x). Only this plugin's version scheme changed; the rest of
-         the catalog is not enrolled in Paid or Freemium and keeps semver
-         unchanged.
+         own version (release-version 20262 pairs with plugin version
+         2026.2.x), and a new release-version needs a release-date no
+         earlier release used.
          Do not use a literal double hyphen anywhere in this comment, the
          XML spec forbids it inside comments and patchPluginXml will crash. -->
-    <product-descriptor code="PFIRESTORECOMPA" release-date="20260923" release-version="20261" optional="true"/>
+    <product-descriptor code="PFIRESTORECOMPA" release-date="20261019" release-version="20262" optional="true"/>
     <description><![CDATA[
-        <p>Browse Firestore collections, documents, and subcollections in
-        a tool window, authenticating with a GCP service account key --
-        entirely local REST calls, no gRPC/heavy SDK dependency. A real
-        paid competitor's reviewers reported, three separate times over 8+
-        months: "'Connection test failed:
-        java.util.NoSuchElementException: Collection contains no element
-        matching the predicate.'" -- an opaque error that says nothing
-        about what's actually wrong. This plugin looks up every required
-        service-account field explicitly and reports the exact missing
-        or malformed field by name; there is no bare `.first {}`/`.single
-        {}` anywhere in the auth path for that exception to come from.</p>
-        <p>Another cited complaint: "it works very poorly with
-        sub-collections. I would like to see these sub-collections in
-        tabular form as well, not just in JSON." The tool window lists
-        each collection's documents in a real table, with a button to
-        drill into a selected document's own subcollections. All network
-        calls run off the EDT; the service account JSON's contents and
-        the resulting access token are held in memory only, never logged
-        or persisted -- only the file path and project ID are saved.
-        Scalar fields (string, integer, double, boolean) are editable
-        in place from the same table.</p>
-        <p><b>Firestore Companion Pro:</b> saved project profiles to
-        switch between dev/staging/prod service accounts without
-        retyping both fields every time; a query/filter builder (field
-        + operator + value) against Firestore's own <code>:runQuery</code>
-        endpoint, instead of always listing an entire collection; and
-        exporting a collection's documents to a pretty-printed JSON
-        file for a quick local backup/debug snapshot, preserving int64
-        precision exactly as Firestore stores it.</p>
+        <p>Browse Firestore data in a tool window, signed in with a service account key. The IDE calls Firestore's REST API directly: no proxy, no telemetry, and every network call runs off the UI thread.</p>
+        <p><b>Free</b></p>
+        <ul>
+          <li><b>Connect</b> with a service account JSON key and a project ID. A malformed key is reported by the exact missing or invalid field.</li>
+          <li><b>Collections and documents in a table</b>, with drill-down into each document's subcollections.</li>
+          <li>The key's contents and the access token stay in memory. Only the key's file path and the project ID are saved.</li>
+        </ul>
+        <p><b>Firestore Companion Pro</b> (paid, with a free trial)</p>
+        <ul>
+          <li><b>Edit in place</b> string, integer, double and boolean fields.</li>
+          <li><b>Saved connection profiles</b> to switch between dev, staging and prod without retyping.</li>
+          <li><b>Query builder</b> (field, operator, value) on Firestore's structured-query endpoint, instead of listing a whole collection.</li>
+          <li><b>Export a collection to JSON</b>, keeping Firestore's typed values so int64 numbers keep full precision.</li>
+        </ul>
+        <p>Editing was free before version 2026.2.0. Any installation that runs version 2026.2.0 or later before November 2, 2026 keeps it without a license.</p>
+        <p><a href="https://github.com/GapHunterLabs/firestore-companion">Documentation</a> · <a href="https://github.com/GapHunterLabs/firestore-companion/issues">Report an issue</a></p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -59,5 +40,6 @@
         <toolWindow id="Firestore" anchor="right"
                     icon="/icons/toolWindow.svg"
                     factoryClass="dev.gaphunter.firestorecompanion.toolwindow.FirestoreToolWindowFactory"/>
+        <postStartupActivity implementation="dev.gaphunter.firestorecompanion.license.FirstSeenStartupActivity"/>
     </extensions>
 </idea-plugin>

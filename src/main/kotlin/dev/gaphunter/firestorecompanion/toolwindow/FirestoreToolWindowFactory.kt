@@ -20,6 +20,7 @@ import dev.gaphunter.firestorecompanion.auth.JwtBuilder
 import dev.gaphunter.firestorecompanion.auth.OAuthTokenClient
 import dev.gaphunter.firestorecompanion.auth.ServiceAccountParser
 import dev.gaphunter.firestorecompanion.license.CheckLicense
+import dev.gaphunter.firestorecompanion.license.ProAccess
 import dev.gaphunter.firestorecompanion.pro.CollectionExporter
 import dev.gaphunter.firestorecompanion.pro.ProjectProfile
 import dev.gaphunter.firestorecompanion.pro.ProjectProfileStore
@@ -64,8 +65,9 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
     private val properties = PropertiesComponent.getInstance(project)
     private val profileStore = ProjectProfileStore(properties)
 
-    /** Fail-closed: null (facade not ready) and false are both treated as unlicensed everywhere a Pro action is gated. */
-    private val isPro: Boolean = CheckLicense.isLicensed() == true
+    // Only for the "(Pro)" labels; every Pro action asks ProAccess again when clicked.
+    private val proAtStart = ProAccess.isPro()
+    private val editAtStart = ProAccess.canEdit()
 
     private val serviceAccountPathField = JBTextField(properties.getValue(PROP_SERVICE_ACCOUNT_PATH, ""))
     private val projectIdField = JBTextField(properties.getValue(PROP_PROJECT_ID, ""))
@@ -78,17 +80,18 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
     private val documentsTableModel = DefaultTableModel(arrayOf("Document ID", "Fields"), 0)
     private val documentsTable = JBTable(documentsTableModel)
     private val subcollectionsButton = JButton("Open Subcollections of Selected Document")
-    private val editButton = JButton("Edit Selected Document")
+    private val editButton = JButton(proLabel("Edit Selected Document", editAtStart))
 
-    // Pro-only: multi-project profiles, query filter, JSON export. None
-    // of these widgets are added to the layout at all when !isPro --
-    // fail-closed by construction, not just disabled-but-visible.
+    // Pro: multi-project profiles, query filter, JSON export, and editing (Pro
+    // since 2026.2.0, see LegacyFreeFeatures). Always on screen, so the free
+    // tier can see what Pro adds; a click without a license opens the license
+    // dialog instead of running the action.
     private val profileCombo = JComboBox<String>()
-    private val saveProfileButton = JButton("Save Profile")
-    private val deleteProfileButton = JButton("Delete Profile")
-    private val filterButton = JButton("Filter...")
+    private val saveProfileButton = JButton(proLabel("Save Profile", proAtStart))
+    private val deleteProfileButton = JButton(proLabel("Delete Profile", proAtStart))
+    private val filterButton = JButton(proLabel("Filter...", proAtStart))
     private val clearFilterButton = JButton("Clear Filter")
-    private val exportButton = JButton("Export Collection to JSON...")
+    private val exportButton = JButton(proLabel("Export Collection to JSON...", proAtStart))
 
     private var restClient: FirestoreRestClient? = null
     private var currentDocuments: List<FirestoreDocument> = emptyList()
@@ -99,22 +102,20 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
     init {
         border = JBUI.Borders.empty(8)
 
-        val topPanel = JPanel(GridLayout(if (isPro) 3 else 2, 3, 4, 4)).apply {
+        val topPanel = JPanel(GridLayout(3, 3, 4, 4)).apply {
             add(JLabel("Service account JSON:"))
             add(serviceAccountPathField)
             add(browseButton)
             add(JLabel("Project ID:"))
             add(projectIdField)
             add(connectButton)
-            if (isPro) {
-                add(JLabel("Profile:"))
-                add(profileCombo)
-                val profileButtons = JPanel(GridLayout(1, 2, 2, 0)).apply {
-                    add(saveProfileButton)
-                    add(deleteProfileButton)
-                }
-                add(profileButtons)
+            add(JLabel("Profile:"))
+            add(profileCombo)
+            val profileButtons = JPanel(GridLayout(1, 2, 2, 0)).apply {
+                add(saveProfileButton)
+                add(deleteProfileButton)
             }
+            add(profileButtons)
         }
 
         val navPanel = JPanel(BorderLayout()).apply {
@@ -122,15 +123,12 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
             add(rootButton, BorderLayout.EAST)
         }
 
-        val actionCount = if (isPro) 5 else 2
-        val documentActionsPanel = JPanel(GridLayout(1, actionCount, 4, 0)).apply {
+        val documentActionsPanel = JPanel(GridLayout(1, 5, 4, 0)).apply {
             add(subcollectionsButton)
             add(editButton)
-            if (isPro) {
-                add(filterButton)
-                add(clearFilterButton)
-                add(exportButton)
-            }
+            add(filterButton)
+            add(clearFilterButton)
+            add(exportButton)
         }
 
         val centerPanel = JPanel(BorderLayout()).apply {
@@ -150,17 +148,38 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
             if (!it.valueIsAdjusting) collectionList.selectedValue?.let { collectionId -> loadDocuments(collectionId) }
         }
         subcollectionsButton.addActionListener { openSubcollectionsOfSelectedDocument() }
-        editButton.addActionListener { editSelectedDocument() }
-
-        if (isPro) {
-            refreshProfileCombo()
-            profileCombo.addActionListener { applySelectedProfile() }
-            saveProfileButton.addActionListener { saveCurrentAsProfile() }
-            deleteProfileButton.addActionListener { deleteSelectedProfile() }
-            filterButton.addActionListener { openFilterDialog() }
-            clearFilterButton.addActionListener { clearFilter() }
-            exportButton.addActionListener { exportCurrentCollection() }
+        editButton.addActionListener {
+            if (ProAccess.canEdit()) {
+                editSelectedDocument()
+            } else {
+                CheckLicense.requestLicense("Editing documents is part of Firestore Companion Pro.")
+            }
         }
+
+        refreshProfileCombo()
+        profileCombo.addActionListener { applySelectedProfile() }
+        saveProfileButton.addActionListener {
+            if (requirePro("Saved connection profiles are part of Firestore Companion Pro.")) saveCurrentAsProfile()
+        }
+        deleteProfileButton.addActionListener {
+            if (requirePro("Saved connection profiles are part of Firestore Companion Pro.")) deleteSelectedProfile()
+        }
+        filterButton.addActionListener {
+            if (requirePro("The query builder is part of Firestore Companion Pro.")) openFilterDialog()
+        }
+        clearFilterButton.addActionListener { clearFilter() }
+        exportButton.addActionListener {
+            if (requirePro("Exporting a collection to JSON is part of Firestore Companion Pro.")) exportCurrentCollection()
+        }
+    }
+
+    private fun proLabel(text: String, unlocked: Boolean): String = if (unlocked) text else "$text (Pro)"
+
+    /** True with a license; otherwise opens the license dialog with [message] and returns false. */
+    private fun requirePro(message: String): Boolean {
+        if (ProAccess.isPro()) return true
+        CheckLicense.requestLicense(message)
+        return false
     }
 
     private fun refreshProfileCombo() {
@@ -170,6 +189,9 @@ private class FirestorePanel(private val project: Project) : JPanel(BorderLayout
     }
 
     private fun applySelectedProfile() {
+        // Silent without Pro: refreshProfileCombo() fires this too, and profiles saved during an
+        // expired trial must not pop up a license dialog every time the window opens.
+        if (!ProAccess.isPro()) return
         val name = profileCombo.selectedItem as? String ?: return
         val profile = profileStore.listProfiles().firstOrNull { it.name == name } ?: return
         serviceAccountPathField.text = profile.serviceAccountPath

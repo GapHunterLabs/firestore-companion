@@ -1,8 +1,9 @@
 # Firestore Companion
 
-Browse and edit Firestore collections, documents, and subcollections in
-a tool window, authenticating with a GCP service account key via
-simple REST calls.
+Browse Firestore collections, documents, and subcollections in a tool
+window, authenticating with a GCP service account key via simple REST
+calls. Editing, saved profiles, a query builder and JSON export are part
+of Firestore Companion Pro.
 
 ## Why it exists
 
@@ -73,12 +74,17 @@ Firestore rejects.
 
 ## Firestore Companion Pro
 
-Optional paid tier on top of everything above (all free-tier features
-stay free, no exceptions). Gated by `CheckLicense.isLicensed()`,
-fail-closed -- a `null`/unknown license state is treated as
-unlicensed, same as an explicit `false`, and the Pro widgets aren't
-even added to the layout when unlicensed (not just disabled-but-visible):
+Optional paid tier on top of browsing. Gated by `CheckLicense.isLicensed()`,
+fail-closed -- a `null`/unknown license state is treated as unlicensed,
+same as an explicit `false`. The Pro buttons are always visible, marked
+"(Pro)" without a license, and the license is checked again on every
+click, so a trial started while the tool window is open works right away:
 
+- **Editing documents.** Change any scalar field (string, integer,
+  double, boolean) of the selected document and save. Editing was free
+  before version 2026.2.0; any installation that runs version 2026.2.0 or
+  later before November 2, 2026 keeps it without a license (the plugin
+  records the first day it ran in the IDE's local settings to know that).
 - **Saved project profiles.** The free tier stores exactly one service
   account path + one project ID. Pro adds a profile selector (name +
   service account path + project ID), so switching between
@@ -99,7 +105,7 @@ Open the "Firestore" tool window, set the path to your service account
 JSON key file and your GCP project ID, and click Connect. Select a
 collection on the left to see its documents in the table; select a
 document row and click "Open Subcollections of Selected Document" to
-drill into that document's own subcollections, or "Edit Selected
+drill into that document's own subcollections, or (Pro) "Edit Selected
 Document" to change any of its scalar fields and save.
 
 ## Buying for a team
