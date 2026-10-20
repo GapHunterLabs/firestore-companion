@@ -2,8 +2,18 @@
 
 Browse Firestore collections, documents, and subcollections in a tool
 window, authenticating with a GCP service account key via simple REST
-calls, or against the local Firestore emulator with no key. Editing, saved profiles, a query builder and JSON export are part
-of Firestore Companion Pro.
+calls, or against the local Firestore emulator with no key. Editing,
+saved profiles, a query builder and JSON export are part of Firestore
+Companion Pro.
+
+![Firestore Companion: browse collections and subcollections in tables, connect to the local emulator, and filter and edit documents in the IDE](docs/media/hero.gif)
+
+Each feature on its own:
+[local emulator](docs/media/01-emulator.gif) ·
+[subcollections in tables](docs/media/02-subcollections.gif) ·
+[query filter (Pro)](docs/media/03-filter.gif) ·
+[edit in place (Pro)](docs/media/04-edit.gif) ·
+[JSON export (Pro)](docs/media/05-export.gif)
 
 ## Why it exists
 
