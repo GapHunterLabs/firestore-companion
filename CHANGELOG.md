@@ -146,7 +146,8 @@
   dependency) with a tested (not yet UI-wired) `PATCH` for field
   updates.
 
-[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/2026.2.0...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/firestore-companion/compare/2026.2.1...HEAD
+[2026.2.1]: https://github.com/GapHunterLabs/firestore-companion/compare/2026.2.0...2026.2.1
 [2026.2.0]: https://github.com/GapHunterLabs/firestore-companion/compare/2026.1.0...2026.2.0
 [2026.1.0]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.4...2026.1.0
 [0.2.4]: https://github.com/GapHunterLabs/firestore-companion/compare/0.2.3...0.2.4
