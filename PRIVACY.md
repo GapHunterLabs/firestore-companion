@@ -27,7 +27,7 @@ document editing without a license, and never sends it anywhere.
 
 Firestore Companion's entire purpose is browsing and editing **your own**
 Firestore data, which requires network access by design — unlike most
-Gap Hunter Labs plugins, this one is not "zero network calls," and we
+Gap Hunter Labs plugins, this one is not "zero network calls," and I
 won't claim otherwise. What actually happens:
 
 - **No network call is automatic.** Nothing happens on install or in the
@@ -38,8 +38,8 @@ won't claim otherwise. What actually happens:
   through a Gap Hunter Labs server: a signed JWT bearer assertion is
   exchanged for an access token at the token URI named in your own
   service account file, then REST calls go straight to
-  `firestore.googleapis.com/v1`. We have no server in this path — we
-  could not see this traffic even if we wanted to.
+  `firestore.googleapis.com/v1`. I have no server in this path — I
+  could not see this traffic even if I wanted to.
 - **With an emulator host set (version 2026.2.1 or later)**, the requests
   go only to that host and port instead, over plain HTTP as the Firestore
   emulator requires, with no service account and no call to Google. They
